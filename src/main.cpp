@@ -7,8 +7,10 @@
 #include <Adafruit_SSD1351.h>
 #include <Adafruit_GFX.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <Font5x7Fixed.h>
 // #include <U8g2lib.h>
 #include <SPI.h>
+#include <helpers.h>
 
 // OLED
 #define OLED_WIDTH  128
@@ -60,7 +62,7 @@ void setup() {
 
   // Setup SSD1351
   display.begin();
-  display.setFont(&FreeSans12pt7b);
+  display.setFont(&Font5x7Fixed);
   display.setTextColor(WHITE);
 
   display.fillRect(0, 0, 128, 128, BLACK);
@@ -100,6 +102,10 @@ void setup() {
 
   ok = ccs811.start(CCS811_MODE_1SEC);
   if ( !ok ) Serial.println(F("start failed"));
+
+  // Setup permanent display elements
+  display.fillRect(0, 0, OLED_WIDTH, 24, RED);
+  printCentred("CUMMER", OLED_WIDTH/2, 20);
 }
 
 void loop() {
@@ -155,32 +161,25 @@ void loop() {
   }
 
   // SSD1351
-  display.fillRoundRect(0, 5, 65, 21, 2, GREEN);
-  display.setCursor(2, 23);
+  display.setFont(&Font5x7Fixed);
+
+  display.fillRect(0, 127-14, 40, 127, GREEN);
+  display.setCursor(0, 127-1);
   display.println(tvoc);
 
+  // Test getTextBounds()
 
-  // Write to OLED (U8g2)
-  // u8g2.firstPage();
-  // do {
-  //   u8g2.setFont(u8g2_font_profont22_tr);
-  //   u8g2.setCursor(0, 15);
-  //   u8g2.print(F("h - "));
-  //   u8g2.print(hum);
-  //   u8g2.print(F("%"));
-  //   u8g2.setCursor(0, 30);
-  //   u8g2.print(F("t - "));
-  //   u8g2.print(temp);
-  //   u8g2.print(F("°C"));
-  //   u8g2.setCursor(0, 45);
-  //   u8g2.print(F("c - "));
-  //   u8g2.print(co2);
-  //   u8g2.print(F(" ppm"));
-  //   u8g2.setCursor(0, 60);
-  //   u8g2.print(F("v - "));
-  //   u8g2.print(tvoc);
-  //   u8g2.print(F(" ppb"));
-  // } while ( u8g2.nextPage() );
+  printCentred("I AM CUM", OLED_WIDTH/2, OLED_HEIGHT/2);
 
   delay(1000);
+}
+
+void printCentred(const char *stri, int x, int y)
+{
+    display.setTextWrap(false);
+    int16_t x0, y0;
+    uint16_t w, h;
+    display.getTextBounds(stri, x, y, &x0, &y0, &w, &h); //calc width of new string
+    display.setCursor(x - (w/2), y);
+    display.print(stri);
 }

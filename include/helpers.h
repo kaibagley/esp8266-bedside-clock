@@ -1,0 +1,1 @@
+void printCentred(const char *buf, int x, int y);
