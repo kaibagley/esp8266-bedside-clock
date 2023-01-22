@@ -4,17 +4,37 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <U8g2lib.h>
+#include <Adafruit_SSD1351.h>
+#include <Adafruit_GFX.h>
+#include <Fonts/FreeSans12pt7b.h>
+// #include <U8g2lib.h>
 #include <SPI.h>
 
 // OLED
+#define OLED_WIDTH  128
+#define OLED_HEIGHT 128
+
 #define OLED_MOSI 13
 #define OLED_CLK  14
 #define OLED_DC    0
 #define OLED_CS   15
 #define OLED_RESET 2
 
-U8G2_SH1106_128X64_WINSTAR_1_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ OLED_CS, /* dc=*/ OLED_DC, /* reset=*/ OLED_RESET);
+// Color definitions
+#define	BLACK   0x0000
+#define	BLUE    0x001F
+#define	RED     0xF800
+#define	GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0  
+#define WHITE   0xFFFF
+
+// U8G2_SH1106_128X64_WINSTAR_1_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ OLED_CS, /* dc=*/ OLED_DC, /* reset=*/ OLED_RESET);
+// Adafruit_SSD1351 display = Adafruit_SSD1351(OLED_WIDTH, OLED_HEIGHT, OLED_CS, OLED_DC, OLED_MOSI, OLED_CLK, OLED_RESET);
+
+// Hardware SPI
+Adafruit_SSD1351 display = Adafruit_SSD1351(OLED_WIDTH, OLED_HEIGHT, &SPI, OLED_CS, OLED_DC, OLED_RESET);
 
 // DHT11 temp and humidity sensor
 #define DHTPIN 3
@@ -26,7 +46,8 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 #define CCS_SCL 5
 CCS811 ccs811(D3);
 
-int temp, hum, co2, tvoc;
+uint16_t temp, hum, co2, tvoc;
+uint8_t ok;
 
 void setup() {
 
@@ -34,9 +55,16 @@ void setup() {
   Serial.begin(115200);
 
   // Setup U8g2
-  bool ok = u8g2.begin();
-  if ( !ok ) Serial.println(F("u8g2 begin failed"));
-  
+  // bool ok = u8g2.begin();
+  // if ( !ok ) Serial.println(F("u8g2 begin failed"));
+
+  // Setup SSD1351
+  display.begin();
+  display.setFont(&FreeSans12pt7b);
+  display.setTextColor(WHITE);
+
+  display.fillRect(0, 0, 128, 128, BLACK);
+
   // Setup DHT11
   dht.begin();
   
@@ -126,27 +154,33 @@ void loop() {
     Serial.println(ccs811.errstat_str(errstat));
   }
 
-  // Write to OLED
-  u8g2.firstPage();
-  do {
-    u8g2.setFont(u8g2_font_profont22_tr);
-    u8g2.setCursor(0, 15);
-    u8g2.print(F("h - "));
-    u8g2.print(hum);
-    u8g2.print(F("%"));
-    u8g2.setCursor(0, 30);
-    u8g2.print(F("t - "));
-    u8g2.print(temp);
-    u8g2.print(F("°C"));
-    u8g2.setCursor(0, 45);
-    u8g2.print(F("c - "));
-    u8g2.print(co2);
-    u8g2.print(F(" ppm"));
-    u8g2.setCursor(0, 60);
-    u8g2.print(F("v - "));
-    u8g2.print(tvoc);
-    u8g2.print(F(" ppb"));
-  } while ( u8g2.nextPage() );
+  // SSD1351
+  display.fillRoundRect(0, 5, 65, 21, 2, GREEN);
+  display.setCursor(2, 23);
+  display.println(tvoc);
+
+
+  // Write to OLED (U8g2)
+  // u8g2.firstPage();
+  // do {
+  //   u8g2.setFont(u8g2_font_profont22_tr);
+  //   u8g2.setCursor(0, 15);
+  //   u8g2.print(F("h - "));
+  //   u8g2.print(hum);
+  //   u8g2.print(F("%"));
+  //   u8g2.setCursor(0, 30);
+  //   u8g2.print(F("t - "));
+  //   u8g2.print(temp);
+  //   u8g2.print(F("°C"));
+  //   u8g2.setCursor(0, 45);
+  //   u8g2.print(F("c - "));
+  //   u8g2.print(co2);
+  //   u8g2.print(F(" ppm"));
+  //   u8g2.setCursor(0, 60);
+  //   u8g2.print(F("v - "));
+  //   u8g2.print(tvoc);
+  //   u8g2.print(F(" ppb"));
+  // } while ( u8g2.nextPage() );
 
   delay(1000);
 }
