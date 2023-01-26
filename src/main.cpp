@@ -56,7 +56,7 @@ String months[12]  = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 // WiFi
 WiFiUDP ntpUDP;
 // SU NTP Pool, offset for UTC+8, and interval of once per minute
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 8*3600, 60000); 
+NTPClient timeClient(ntpUDP, "au.pool.ntp.org", 8*3600, 60000); 
 
 uint16_t temp, hum, co2, tvoc;
 uint8_t ok;
@@ -136,7 +136,7 @@ void loop() {
 
 	// Update time and get structure
 	timeClient.update();
-	uint32_t epoch = timeClient.getEpochTime();
+	uint64_t epoch = timeClient.getEpochTime();
 	struct tm *timeinfo = gmtime((time_t *)&epoch);
 
 	uint8_t second_ = timeinfo->tm_sec;
@@ -200,14 +200,25 @@ void loop() {
 
 	// SSD1351
 	display.setFont(&Font5x7Fixed);
+	
+	// Time
+	display.setTextSize(2);
+	display.fillRect(0, 24, OLED_WIDTH, 32, BLACK);
+	String time_str = String(hour_) + String(":") + String(minute_) + String(":") + String(second_);
+	printCentred(time_str.c_str(), OLED_WIDTH/2,  24+32-2);
 
 	// Date
 	display.setTextSize(1);
-	display.fillRect(0, 24, OLED_WIDTH, 32, BLACK);
+	display.fillRect(0, 32+24, OLED_WIDTH, 9, BLACK);
 	// Only update date if it's a new day
-	String date_str = String(wday_) + String(day_) + String(month_) + String(year_);
-	printCentred(date_str.c_str(), OLED_WIDTH/2, 24+30);
+	String date_str = String(wday_) + String(" ") + String(day_) + String(month_) + String(" ") + String(year_);
+	printCentred(date_str.c_str(), OLED_WIDTH/2, (9 - (9 - 7)/2) + 32+24);
 	
+	// if (day_ != lastDay) {
+	// 	String date_str = String(wday_) + String(day_) + String(" - ") + String(month_) + String(year_);
+	// 	printCentred(date_str.c_str(), OLED_WIDTH/2, 24+30);
+	// }
+  
 	// TVOC
 	display.setTextSize(1);
 	display.setCursor(0, 126);
