@@ -15,7 +15,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-// OLED
+// OLED - 128x128 but 129 as GFX libs start at 1
 #define OLED_WIDTH  128
 #define OLED_HEIGHT 128
 
@@ -60,6 +60,7 @@ NTPClient timeClient(ntpUDP, "au.pool.ntp.org", 8*3600, 60000);
 
 uint16_t temp, hum, co2, tvoc;
 uint8_t ok;
+bool update_min = true, update_hour = true, update_date = true;
 
 void setup() {
 
@@ -132,7 +133,7 @@ void setup() {
 
 void loop() {
 	// Used to check for change of day
-	uint8_t lastDay;
+	uint8_t scanpos = 24;
 
 	// Update time and get structure
 	timeClient.update();
@@ -203,21 +204,35 @@ void loop() {
 	
 	// Time
 	display.setTextSize(2);
-	display.fillRect(0, 24, OLED_WIDTH, 32, BLACK);
-	String time_str = String(hour_) + String(":") + String(minute_) + String(":") + String(second_);
-	printCentred(time_str.c_str(), OLED_WIDTH/2,  24+32-2);
-
+	// Hour
+	if (update_hour) {
+		display.fillRect(0, scanpos, (OLED_WIDTH/2) - 3, 25, BLACK);
+		String hrstr = String(hour_);
+		if (hour_ < 10) hrstr = String("0") + String(hour_);	
+		printCentred(String(hrstr).c_str(), OLED_WIDTH/2 - 15,  scanpos+25-3);
+	}
+	// Colon
+	display.fillRect((OLED_WIDTH/2) - 3, scanpos, 6, 25, BLACK);
+	if (second_ % 2) printCentred(":", OLED_WIDTH/2,  scanpos+25-3);
+	// Minute
+	if (update_min) {
+		display.fillRect((OLED_WIDTH/2) + 3, scanpos, OLED_WIDTH, 25, BLACK);
+		// Number with leading zero if necessary
+		String minstr = String(minute_);
+		if (minute_ < 10) minstr = String("0") + String(minute_);
+		printCentred(minstr.c_str(), OLED_WIDTH/2 + 15,  scanpos+25-3);
+	}
+	scanpos += 25;
+	
 	// Date
 	display.setTextSize(1);
-	display.fillRect(0, 32+24, OLED_WIDTH, 9, BLACK);
-	// Only update date if it's a new day
-	String date_str = String(wday_) + String(" ") + String(day_) + String(month_) + String(" ") + String(year_);
-	printCentred(date_str.c_str(), OLED_WIDTH/2, (9 - (9 - 7)/2) + 32+24);
-	
-	// if (day_ != lastDay) {
-	// 	String date_str = String(wday_) + String(day_) + String(" - ") + String(month_) + String(year_);
-	// 	printCentred(date_str.c_str(), OLED_WIDTH/2, 24+30);
-	// }
+	// Only update date if it's a new day	
+	if (update_date) {
+		display.fillRect(0, scanpos, OLED_WIDTH, 9, BLACK);
+		String date_str = String(wday_) + String(" ") + String(day_) + String(" - ") + String(month_) + String(" ") + String(year_);
+		printCentred(date_str.c_str(), OLED_WIDTH/2, scanpos+7);
+	}
+	scanpos += 9;
   
 	// TVOC
 	display.setTextSize(1);
@@ -225,7 +240,9 @@ void loop() {
 	display.fillRect(0, 113, 40, 127, GREEN);
 	display.println(tvoc);
 
-	lastDay = day_;
+	update_date = hour_ == 59; 
+	update_hour = minute_ == 59;
+	update_min  = second_ == 59;
 	delay(1000);
 }
 
